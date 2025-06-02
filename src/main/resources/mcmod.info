@@ -1,0 +1,17 @@
+[
+{
+  "modid": "infernalmobslotr",
+  "name": "Infernal Mobs LOTR",
+  "description": "Diablo Style random Enchantments on Entities! Harder fights! More XP and enchanted loot! Fork for lotr mod compartiblity, bugfixes and features",
+  "mcversion": "1.7.10",
+  "url": "http://www.minecraftforum.net/topic/991952-",
+  "authors": [
+    "AtomicStryker"
+  ],
+  "credits": "Forge devs",
+  "logoFile": "assets/infernalmobs/textures/gui/logo.png",
+  "dependencies": [
+	"Forge"
+  ]
+}
+]
