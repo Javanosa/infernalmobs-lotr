@@ -1,6 +1,7 @@
 You may have heard of the mod "Infernal Mobs" which turns various mobs into epic bosses and great loot. However it didnt work properly with lotr mod previously. I have made a fork with countless bugfixes and rewrites, lotr mod compatibility and even some new features. The original author is [Atomicstryker](<https://github.com/AtomicStryker/atomicstrykers-minecraft-mods>)
 
-**[Infernalmobs-LOTR](<https://github.com/Javanosa/infernalmobs-lotr>)**
+**Infernalmobs-LOTR** - **Download: [Release 1.7.3](https://github.com/Javanosa/infernalmobs-lotr/releases/tag/1.7.3)**
+
 - LOTR NPCs can become infernal now
   - Factor to control the rarity of Allied and enemied NPCs seperately
   - Civlians and Hireds cannot turn infernal (for now, request if you want it differently)
@@ -28,3 +29,15 @@ You may have heard of the mod "Infernal Mobs" which turns various mobs into epic
     - Fixed Teleportation for Ninja and Ender
     - Added more effects to Alchemist
     - Webs now place in better ways and dont miss the target as much anymore
+
+- Added Server Side Particles to some Mods like Ender and Bomber
+- Particles are now lit so it can be seen better in dark
+- Fix Choke Ability and rendering
+- Hired Units now have a rare chance to learn abilities of killed infernal mobs
+	- The chance scales with amount of abilities of the killed boss
+	- infernalmobslotr.cfg -> abilityRewardChance
+	- Whether Hired Units can learn destructive Abilities
+	- infernalmobslotr.cfg -> canLearnDestructiveAbilities
+- Reworked player & entity targeting
+- Attacks in Creative Mode no longer trigger destructive abilities
+- The new [ME-Tweaks update](https://curseforge.com/minecraft/mc-mods/lotr-middleearth-tweaks) patched fireballs ignoring Banner Protection
