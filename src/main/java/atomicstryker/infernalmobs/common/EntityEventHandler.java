@@ -1,17 +1,28 @@
 package atomicstryker.infernalmobs.common;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map.Entry;
 
+import atomicstryker.infernalmobs.common.mods.MM_Arsonist;
+import atomicstryker.infernalmobs.common.mods.MM_Bomber;
+import atomicstryker.infernalmobs.common.mods.MM_Ghastly;
+import atomicstryker.infernalmobs.common.mods.MM_Storm;
 import atomicstryker.infernalmobs.common.network.MobModsPacket;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.management.PlayerManager;
+import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.DamageSource;
+import net.minecraft.util.MathHelper;
 import net.minecraft.world.ChunkCoordIntPair;
+import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.config.Configuration;
@@ -32,6 +43,7 @@ import cpw.mods.fml.common.eventhandler.Event;
 import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import lotr.common.LOTRConfig;
+import lotr.common.entity.npc.LOTREntityNPC;
 
 public class EntityEventHandler
 {
@@ -84,13 +96,13 @@ public class EntityEventHandler
             	String stringData = mod.getLinkedModNameUntranslated();
                 InfernalMobsCore.instance().networkHelper.sendPacketToPlayer(new MobModsPacket(stringData, e.getEntityId(), (byte) 1), (EntityPlayerMP) event.entityPlayer);
                 InfernalMobsCore.instance().sendHealthPacket(e, mod.getActualHealth(e));
-                System.out.println("Add "+e.getCommandSenderName()+" with ID "+e.getEntityId());
+                //System.out.println("Add "+e.getCommandSenderName()+" with ID "+e.getEntityId());
             }
         }
     
     }
     
-    @SubscribeEvent
+    /*@SubscribeEvent
     public void onStopTracking(PlayerEvent.StopTracking event) {
     	if (event.target instanceof EntityLivingBase)
         {
@@ -103,7 +115,7 @@ public class EntityEventHandler
             }
         }
     	
-    }
+    }*/
 
     @SubscribeEvent
     public void onEntityJoinedWorld(EntityJoinWorldEvent event)
@@ -325,6 +337,7 @@ public class EntityEventHandler
             if (mod != null)
             {
                 mod.onDropItems(event.entityLiving, event.source, event.drops, event.lootingLevel, event.recentlyHit, event.specialDropValue);
+                InfernalMobsCore.attemptUnitReward(event.source.getEntity(), mod);
                 InfernalMobsCore.removeEntFromElites(event.entityLiving, false);
             }
         }

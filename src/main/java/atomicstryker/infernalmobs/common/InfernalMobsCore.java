@@ -26,7 +26,11 @@ import net.minecraft.init.Blocks;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemEnchantedBook;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.management.PlayerManager;
+import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.config.ConfigCategory;
 import net.minecraftforge.common.config.ConfigElement;
@@ -100,7 +104,7 @@ public class InfernalMobsCore
 {
 	public static final String MODID = "infernalmobslotr";
 	public static final String MODNAME = "Infernal Mobs LOTR";
-	public static final String VERSION = "1.7.2";
+	public static final String VERSION = "1.7.3";
 	
     private final long existCheckDelay = 500L;
 
@@ -161,6 +165,9 @@ public class InfernalMobsCore
     public static int lootEnchantPowerChange;
     public static double lootChance;
     public static boolean lootRequireDirectPlayerKill;
+    
+    public static float abilityRewardChance;
+    public static boolean allowDestructiveAbilityRewards;
     
     public static boolean lotr;
 
@@ -373,7 +380,10 @@ public class InfernalMobsCore
 	    modifiersPerDrop = config.get(categoryLoot, "modifiersPerDrop", 8, "how many modifiers will allow a second drop").getInt();
 	    lootEnchantPowerChange = config.get(categoryLoot, "enchantPowerChange", -1, "reduce or increase max enchant level from the current item, usually 30 (like enchanting table has 30 for example)").getInt();
 	    lootRequireDirectPlayerKill = config.get(categoryLoot, "requireDirectPlayerKill", false).getBoolean();
-	    lootChance = config.get(categoryLoot, "dropChance", 0.6D, "whether something drops at all").getDouble();
+	    lootChance = config.get(categoryLoot, "dropChance", 1.0D, "whether something drops at all").getDouble(); // 0.6
+	    
+	    abilityRewardChance = (float) config.get(categoryGeneral, "abilityRewardChance", 0.05D, "Chance for Hired Units to learn abilities when killing a boss").getDouble();
+	    allowDestructiveAbilityRewards = config.get(categoryGeneral, "canLearnDestructiveAbilities", true, "Whether Hired Units can learn destructive Abilities").getBoolean();
 	    
 	    if(config.hasChanged()) config.save();
     }
@@ -690,7 +700,7 @@ public class InfernalMobsCore
             {
             	Map<EntityLivingBase, MobModifier> rareMobs = proxy.getRareMobs(client);
             	if(rareMobs.containsKey(entity)) {
-            		System.out.println("removed "+rareMobs.remove(entity));
+            		//System.out.println("removed "+rareMobs.remove(entity));
             	}
             	
             	rareMobs.put(entity, mod);
@@ -954,7 +964,7 @@ public class InfernalMobsCore
         }
         
         for(Entity mob : removes) {
-        	System.out.println("Remove "+mob.getCommandSenderName()+" with ID "+mob.getEntityId()+(client ? " CLIENT" : " SERVER"));
+        	//System.out.println("Remove "+mob.getCommandSenderName()+" with ID "+mob.getEntityId()+(client ? " CLIENT" : " SERVER"));
             removeEntFromElites((EntityLivingBase) mob, client);
         }
     }
@@ -1064,6 +1074,110 @@ public class InfernalMobsCore
         infCheckA = mob;
         infCheckB = entity;
         return false;
+    }
+    
+    public static void attemptUnitReward(Entity killer, MobModifier mod) {
+    	if(InfernalMobsCore.lotr && killer instanceof LOTREntityNPC) {
+        	LOTREntityNPC npc = (LOTREntityNPC) killer;
+        	if(npc.hiredNPCInfo.isActive) {
+        		// average should have atleast 5 mods to be worth
+        		float chance = (abilityRewardChance / 5F) * mod.getModSize();
+        		// chance gets greater the more modifiers, with limit tho
+        		if(npc.getRNG().nextFloat() < chance) {
+        			MobModifier result = InfernalMobsCore.applyRandomModifierToNpc(npc, mod);
+        			if(result != null) {
+        				EntityPlayer player = npc.hiredNPCInfo.getHiringPlayer();
+        				player.addChatComponentMessage(new ChatComponentText("Your Unit \u00a76"+npc.getCommandSenderName()+"\u00a7r learned the ability \u00a7c"+result.modName+"\u00a7r by killing a Boss"));
+        			}
+        		}
+        	}
+        }
+    }
+    
+    public static MobModifier applyRandomModifierToNpc(LOTREntityNPC npc, MobModifier nextMod) {
+    	MobModifier lastMod = InfernalMobsCore.getMobModifiers(npc, false);
+    	
+    	List<MobModifier> list = new ArrayList<>(nextMod.getModSize());
+		
+		
+		while(nextMod != null) {
+			boolean allowed = allowDestructiveAbilityRewards || !(nextMod instanceof MM_Ghastly || nextMod instanceof MM_Bomber || nextMod instanceof MM_Arsonist || nextMod instanceof MM_Storm);
+			
+			if (nextMod != null && nextMod.getBlackListMobClasses() != null)
+	         {
+	             for (Class<?> cl : nextMod.getBlackListMobClasses())
+	             {
+	                 if (npc.getClass().isAssignableFrom(cl))
+	                 {
+	                     allowed = false;
+	                     break;
+	                 }
+	             }
+	         }
+	         if (lastMod != null)
+	         {
+	        	 // already in there?
+	        	 if(lastMod.containsModifierClass(nextMod.getClass())) {
+	        		 allowed = false;
+	        	 }
+	        	 
+	        	 // not compatible?
+	             if (lastMod.getModsNotToMixWith() != null)
+	             {
+	                 for (Class<?> cl : lastMod.getModsNotToMixWith())
+	                 {
+	                     if (cl.equals(nextMod.getClass()))
+	                     {
+	                         allowed = false;
+	                         break;
+	                     }
+	                 }
+	             }
+	         }
+			
+			if(allowed) {
+				list.add(nextMod);
+			}
+			nextMod = nextMod.nextMod;
+		}
+		
+		if(!list.isEmpty()) {
+			MobModifier mod = list.get(npc.getRNG().nextInt(list.size()));
+			// make new mod with the oldmod as nextmod in the chain
+			try
+            {
+				mod = mod.getClass().getConstructor(new Class[] { EntityLivingBase.class, MobModifier.class })
+	            	.newInstance(npc, lastMod);
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+                return null;
+            }
+			
+			InfernalMobsCore.proxy.getRareMobs(false).put(npc, mod);
+			mod.onSpawningComplete(npc);
+			// make packet and send to all watching players
+			String stringData = mod.getLinkedModNameUntranslated();
+			MobModsPacket packet = new MobModsPacket(stringData, npc.getEntityId(), (byte) 1);
+			
+			int x = MathHelper.floor_double(npc.posX) >> 4;
+		    int z = MathHelper.floor_double(npc.posZ) >> 4;
+		    PlayerManager playerManager = ((WorldServer) npc.worldObj).getPlayerManager();
+
+			@SuppressWarnings("unchecked")
+			List<EntityPlayerMP> players = npc.worldObj.playerEntities;
+			for(EntityPlayerMP player : players) {
+				if(playerManager.isPlayerWatchingChunk(player, x, z)) {
+					InfernalMobsCore.instance().networkHelper.sendPacketToPlayer(packet, player);
+					InfernalMobsCore.instance().sendHealthPacket(npc, mod.getActualHealth(npc));
+					System.out.println("Add "+npc.getCommandSenderName()+" with ID "+npc.getEntityId());
+				}  
+			} 
+
+		    return mod;
+		}
+		return null;
     }
 
 }

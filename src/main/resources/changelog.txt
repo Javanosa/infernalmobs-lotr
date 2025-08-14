@@ -1,5 +1,15 @@
+1.7.3
+- Hired Units now have a rare chance to learn abilities of killed infernal mobs
+	- The chance scales with amount of abilities of the killed boss
+	- infernalmobslotr.cfg -> abilityRewardChance
+	- Whether Hired Units can learn destructive Abilities
+	- infernalmobslotr.cfg -> canLearnDestructiveAbilities
+- Reworked player & entity targeting
+- Attacks in Creative Mode no longer trigger destructive abilities
+- The new ME-Tweaks update patched fireballs ignoring Banner Protection
 
-
+1.7.2
+- a lot
 
 1.7.1
 - fixed packet sending
